@@ -14,5 +14,4 @@ COPY . .
 # 애플리케이션이 사용할 포트 지정
 EXPOSE 5000
 
-# 컨테이너 시작 명령어
 CMD ["python", "app.py"]
