@@ -6,7 +6,7 @@ on:
       - main # main 브랜치에 push 될 때 트리거
 
 env:
-  DOCKER_IMAGE_NAME: cong-0306/app-repo-image # 👈 Docker Hub 이미지 경로 (사용자 이름/이미지 이름)
+  DOCKER_IMAGE_NAME: ksmin0306/app-repo-image # 👈 Docker Hub 이미지 경로 (사용자 이름/이미지 이름)
   K8S_REPO_NAME: cong-0306/manifests-repo # 👈 Manifests 레포지토리
   K8S_MANIFEST_PATH: ./Deployment.yml # 👈 Deployment.yaml의 정확한 경로
 
