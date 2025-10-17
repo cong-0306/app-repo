@@ -1,0 +1,28 @@
+# 1. 빌드 스테이지
+# openjdk:17-jdk-slim 태그 사용
+FROM openjdk:17-jdk-slim AS builder
+
+# 작업 디렉토리 설정
+WORKDIR /app
+COPY . .
+# Maven 프로젝트인 경우:
+RUN ./mvnw clean package -DskipTests
+# Gradle 프로젝트인 경우:
+# RUN ./gradlew clean build -x test
+
+ENV JAR_FILE target/*.jar
+
+
+# 2. 실행 스테이지
+# openjdk:17-jre-slim 태그 사용
+FROM openjdk:17-jre-slim
+
+# 작업 디렉토리 설정
+WORKDIR /app
+COPY --from=builder /app/${JAR_FILE} app.jar
+
+# 애플리케이션이 사용할 포트 지정
+EXPOSE 8080
+
+# 컨테이너 시작 시 실행될 명령어
+CMD ["java", "-jar", "app.jar"]
