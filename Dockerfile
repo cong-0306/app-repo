@@ -1,28 +1,18 @@
-# 1. 빌드 스테이지
-# openjdk:17-jdk-slim 태그 사용
-FROM openjdk:17-jdk-slim AS builder
+# Python 3.11 버전의 alpine 이미지를 사용합니다.
+FROM python:3.11-alpine
 
 # 작업 디렉토리 설정
 WORKDIR /app
+
+# 의존성 파일 복사 및 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 애플리케이션 코드 복사
 COPY . .
-# Maven 프로젝트인 경우:
-RUN ./mvnw clean package -DskipTests
-# Gradle 프로젝트인 경우:
-# RUN ./gradlew clean build -x test
-
-ENV JAR_FILE target/*.jar
-
-
-# 2. 실행 스테이지
-# openjdk:17-jre-slim 태그 사용
-FROM openjdk:17-jre-slim
-
-# 작업 디렉토리 설정
-WORKDIR /app
-COPY --from=builder /app/${JAR_FILE} app.jar
 
 # 애플리케이션이 사용할 포트 지정
-EXPOSE 8080
+EXPOSE 5000
 
-# 컨테이너 시작 시 실행될 명령어
-CMD ["java", "-jar", "app.jar"]
+# 컨테이너 시작 명령어
+CMD ["python", "app.py"]
