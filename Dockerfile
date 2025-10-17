@@ -1,23 +1,24 @@
-# 1. 빌드 스테이지: 소스 코드를 빌드하고 .jar 파일을 생성합니다.
-# 안전한 태그로 변경: openjdk:17-jdk-slim-bullseye
-FROM openjdk:17-jdk-slim-bullseye AS builder
+# 1. 빌드 스테이지
+# openjdk:17-jdk-slim 태그 사용
+FROM openjdk:17-jdk-slim AS builder
 
 # 작업 디렉토리 설정
 WORKDIR /app
-
-# ... (중략: Maven/Gradle 빌드 명령어) ...
+COPY . .
+# Maven 프로젝트인 경우:
+RUN ./mvnw clean package -DskipTests
+# Gradle 프로젝트인 경우:
+# RUN ./gradlew clean build -x test
 
 ENV JAR_FILE target/*.jar
 
 
-# 2. 실행 스테이지: JRE(Java Runtime Environment)만 포함된 가벼운 환경에서 실행합니다.
-# 안전한 태그로 변경: openjdk:17-jre-slim-bullseye
-FROM openjdk:17-jre-slim-bullseye
+# 2. 실행 스테이지
+# openjdk:17-jre-slim 태그 사용
+FROM openjdk:17-jre-slim
 
 # 작업 디렉토리 설정
 WORKDIR /app
-
-# 빌드 스테이지에서 생성된 JAR 파일을 복사
 COPY --from=builder /app/${JAR_FILE} app.jar
 
 # 애플리케이션이 사용할 포트 지정
