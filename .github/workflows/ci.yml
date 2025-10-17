@@ -1,0 +1,67 @@
+name: CI/CD Pipeline (Build, Push, Update Manifest)
+
+on:
+  push:
+    branches:
+      - main # main 브랜치에 push 될 때 트리거
+
+env:
+  DOCKER_IMAGE_NAME: cong-0306/app-repo-image # 👈 Docker Hub 이미지 경로 (사용자 이름/이미지 이름)
+  K8S_REPO_NAME: cong-0306/manifests-repo # 👈 Manifests 레포지토리
+  K8S_MANIFEST_PATH: . # 👈 Deployment.yaml의 정확한 경로
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Application Code
+        uses: actions/checkout@v4
+        with:
+          # manifests-repo에 commit/push 하기 위해 PAT_TOKEN 사용
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Get current date for Image Tag
+        id: date
+        run: echo "IMAGE_TAG=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.DOCKER_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      # --- Manifests Repository 업데이트 ---
+
+      - name: Checkout Manifests Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.K8S_REPO_NAME }}
+          token: ${{ secrets.PAT_TOKEN }}
+          path: manifests-checkout # 다른 디렉토리에 체크아웃
+
+      - name: Update Deployment Image Tag
+        run: |
+          cd manifests-checkout
+          # sed를 사용하여 deployment.yaml 파일의 이미지 태그를 변경
+          # 중요: image: cong-0306/app-repo-image:.* 의 형식을 찾아서 변경합니다.
+          sed -i "s|image: cong-0306/app-repo-image:.*|image: ${{ env.DOCKER_IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" ${{ env.K8S_MANIFEST_PATH }}
+          cat ${{ env.K8S_MANIFEST_PATH }} # 변경 사항 확인 (선택 사항)
+
+      - name: Commit and Push Manifest Changes
+        run: |
+          cd manifests-checkout
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore(manifest): Update image tag to ${{ env.IMAGE_TAG }}" || echo "No changes to commit"
+          git push
